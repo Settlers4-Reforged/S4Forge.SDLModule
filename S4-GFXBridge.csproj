@@ -6,17 +6,14 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Platforms>AnyCPU;x86</Platforms>
+    <Platforms>x86</Platforms>
     <IsPublishable>False</IsPublishable>
+	<PublishTrimmed>true</PublishTrimmed>
+	<PublishReadyToRun>true</PublishReadyToRun>
+	<PublishSingleFile>true</PublishSingleFile>
+	<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+	<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <BaseOutputPath>$(SolutionDir)BUILD\S4-GFXBridge</BaseOutputPath>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <Optimize>False</Optimize>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <Optimize>True</Optimize>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
@@ -36,5 +33,13 @@
     <ProjectReference Include="..\NetModAPI\NetModAPI.vcxproj" />
     <ProjectReference Include="..\S4-UIEngine\S4-UIEngine.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Scripts\" />
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="call powershell.exe &quot;$(ProjectDir)Scripts\Deploy.ps1&quot; $(OutDir) $(AssemblyName)" />
+  </Target>
 
 </Project>
