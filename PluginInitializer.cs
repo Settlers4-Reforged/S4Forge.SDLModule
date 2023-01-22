@@ -2,7 +2,9 @@
 using S4_GFXBridge.Rendering;
 using S4_GFXBridge.S4Hooks;
 using S4_UIEngine;
+using S4_UIEngine.UPlay;
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 internal class PluginInitializer : NetModAPI.IPlugin {
@@ -12,10 +14,16 @@ internal class PluginInitializer : NetModAPI.IPlugin {
 
     public void Initialize() {
         UIEngine.Initialize(new InputManager(), new GameSettings(), new SDLRenderer());
-        MessageBox(IntPtr.Zero, "AHH", "YES", 0);
+        NetModAPI.Logger.LogInfo("Initialized UIEngine");
         unsafe {
             S4ModAPI.API.AddMapInitListener((reserved0, reserved1) => {
                 MessageBox(IntPtr.Zero, "This works!", "C# Mod", 0);
+                var friends = Friends.GetFriends();
+
+                var names = string.Join(", ", from a in friends select a.PlayerName);
+
+                MessageBox(IntPtr.Zero, names, "Test", 0);
+
                 return 0;
             });
         }
