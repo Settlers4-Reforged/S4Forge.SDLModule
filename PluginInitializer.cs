@@ -1,8 +1,10 @@
-﻿using S4_GFXBridge;
+﻿using Forge.UX;
+using Forge.UX.UPlay;
+
+using S4_GFXBridge;
 using S4_GFXBridge.Rendering;
 using S4_GFXBridge.S4Hooks;
-using S4_UIEngine;
-using S4_UIEngine.UPlay;
+
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -13,7 +15,7 @@ internal class PluginInitializer : NetModAPI.IPlugin {
     private static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
 
     public void Initialize() {
-        UIEngine.Initialize(new InputManager(), new GameSettings(), new SDLRenderer());
+        UXEngine.Implement(new SDLRenderer(), 0);
         NetModAPI.Logger.LogInfo("Initialized UIEngine");
         unsafe {
             S4ModAPI.API.AddMapInitListener((reserved0, reserved1) => {

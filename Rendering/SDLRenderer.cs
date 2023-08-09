@@ -1,23 +1,25 @@
-﻿using S4_UIEngine.Rendering;
-using S4_UIEngine.Rendering.Text;
-using S4_UIEngine.Rendering.Texture;
-using S4_UIEngine.UI.Components;
-using S4_UIEngine.UI.Elements;
+﻿using Forge.UX.Rendering;
+using Forge.UX.Rendering.Text;
+using Forge.UX.Rendering.Texture;
+using Forge.UX.UI;
+using Forge.UX.UI.Components;
+using Forge.UX.UI.Elements;
+
 using System;
 using System.Numerics;
 
 namespace S4_GFXBridge.Rendering {
     internal class SDLRenderer : IRenderer {
-        public void RenderUIComponent(IUIComponent component, UIElement parent) {
+        public string Name => "SDLRenderer";
+
+        public void RenderUIComponent(IUIComponent component, UIElement parent, SceneGraphState _) {
             throw new NotImplementedException();
         }
 
-        public void RenderTeamTexture(ITexture texture, Vector2 position, Vector2 size) {
+        public Vector2 GetScreenSize() {
             throw new NotImplementedException();
         }
 
-        public ITextRenderer GetTextRenderer() {
-            throw new NotImplementedException();
-        }
+
     }
 }
