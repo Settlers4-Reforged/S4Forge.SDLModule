@@ -1,0 +1,37 @@
+{
+  "name": "UX-Engine SDL Renderer",
+  "id": "UX-Engine-SDL",
+  "assets": {
+    "uri": "https://"
+  },
+  "ignoredEntries": [
+    "log.txt"
+  ],
+  "clearResidualFiles": false,
+  "version": "1.0.0",
+  "type": "Plugin",
+  "entryPoint": "S4Forge-SDLBackend.dll",
+  "relationships": [
+    {
+      "id": "Forge",
+      "optional": false,
+      "manifest": "Url to the newest manifest (e.g. latest release on gitlab)",
+      "compatibility": {
+        "minimum": "1.*",
+        "verified": "1.1.0",
+        "maximum": "2.0.0"
+      }
+    },
+    {
+      "id": "UX-Engine",
+      "optional": false,
+      "manifest": "Url to the newest manifest (e.g. latest release on gitlab)",
+      "compatibility": {
+        "minimum": "1.*",
+        "verified": "1.1.0",
+        "maximum": "2.0.0"
+      }
+    }
+  ],
+  "embedded": false
+}
