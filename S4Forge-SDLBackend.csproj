@@ -27,18 +27,29 @@
         <PackageReference Include="ForgeUpdaterManifest" Version="0.3.1">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
+        <Reference Include="$(ProjectDir)Lib/SDL3-CS.dll">
+            <PrivateAssets>all</PrivateAssets>
+        </Reference>
+        <Reference Include="$(ProjectDir)Lib/SDL3_image-CS.dll">
+            <PrivateAssets>all</PrivateAssets>
+        </Reference>
+        <Reference Include="$(ProjectDir)Lib/SDL3_ttf-CS.dll">
+            <PrivateAssets>all</PrivateAssets>
+        </Reference>
 
-        <PackageReference GeneratePathProperty="true" Include="ppy.SDL3-CS" Version="2024.1022.0" />
+        <EmbeddedResource Include="$(ProjectDir)Lib/SDL3-CS.dll" LogicalName="SDL3-CS.dll" />
+        <EmbeddedResource Include="$(ProjectDir)Lib/SDL3_image-CS.dll" LogicalName="SDL3_image-CS.dll" />
+        <EmbeddedResource Include="$(ProjectDir)Lib/SDL3_ttf-CS.dll" LogicalName="SDL3_ttf-CS.dll" />
 
-        <EmbeddedResource Include="$(Pkgppy_SDL3-CS)\lib\net8.0\SDL3-CS.dll" LogicalName="SDL3-CS.dll" />
-
-
-        <ExportFile Include="$(ProjectDir)Lib\SDL3.dll">
-            <!-- 
-                ExportFileDir is relative to the chose ExportPath from the ProjectType
-                e.g. $(PluginExportPath)/$(ExportFileDir)
-            -->
+        <ExportFile Include="$(ProjectDir)Lib\SDL3.dll;$(ProjectDir)Lib\SDL3_ttf.dll;$(ProjectDir)Lib\SDL3_image.dll">
             <ExportFileDir>\Lib\</ExportFileDir>
+        </ExportFile>
+
+        <ExportFile Include="$(ProjectDir)Assets\Fonts\arial.ttf">
+            <ExportFileDir>\Fonts\</ExportFileDir>
+        </ExportFile>
+        <ExportFile Include="$(ProjectDir)Assets\Textures\**\*">
+            <ExportFileDir>\Textures\</ExportFileDir>
         </ExportFile>
     </ItemGroup>
 
@@ -66,6 +77,8 @@
 
     <ItemGroup>
         <ManifestIgnoredEntries Include="log.txt" />
+
+        <ManifestIgnoredEntries Include="textures/themes/" />
 
         <ManifestRelationships Include="Forge">
             <Manifest>Url to the newest manifest (e.g. latest release on gitlab)</Manifest>

@@ -5,7 +5,8 @@
     "uri": "https://"
   },
   "ignoredEntries": [
-    "log.txt"
+    "log.txt",
+    "textures/themes/"
   ],
   "clearResidualFiles": false,
   "version": "1.0.0",

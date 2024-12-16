@@ -8,16 +8,16 @@ using System.Threading.Tasks;
 
 namespace Forge.SDLBackend.Rendering.Textures {
     internal class TextureCollectionManager : ITextureCollectionManager {
-        private readonly Dictionary<int, TextureCollection> collections = new Dictionary<int, TextureCollection>();
+        private readonly Dictionary<string, TextureCollection> collections = new Dictionary<string, TextureCollection>();
 
-        public ITextureCollection GetCollection(int id) {
+        public ITextureCollection GetCollection(string id) {
             if (!collections.ContainsKey(id)) {
                 collections[id] = new TextureCollection(id);
             }
             return collections[id];
         }
 
-        public ITexture Get(int col, int id) {
+        public ITexture Get(string col, string id) {
             return GetCollection(col).GetTexture(id);
         }
     }

@@ -3,6 +3,8 @@
 using Forge.Logging;
 using Forge.S4;
 using Forge.S4.Callbacks;
+using Forge.SDLBackend.Rendering;
+using Forge.SDLBackend.Rendering.Components;
 using Forge.SDLBackend.Rendering.Textures;
 using Forge.UX.Rendering;
 using Forge.UX.Rendering.Text;
@@ -17,133 +19,151 @@ using Microsoft.DirectX.DirectDraw;
 using SDL;
 
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace S4_GFXBridge.Rendering {
-    internal unsafe class SDLRenderer : IRenderer {
+    public unsafe class SDLRenderer : IRenderer {
         public string Name => "SDLRenderer";
 
-        internal SDL_Window* Window { get; private set; }
-        internal SDL_Renderer* Renderer { get; private set; }
+        private readonly IRendererConfig config;
+        private readonly SceneManager sceneManager;
 
-        internal SDL_Texture* MainRenderTarget { get; private set; }
+        private readonly D3D9Renderer d3d9Renderer;
+        private readonly D3D11Renderer d3d11Renderer;
 
-        internal SDL_Texture* CurrentRenderTarget { get; set; }
+        internal ISDLRenderer ActiveRenderer {
+            get {
+                bool isD3D11 = config.GetConfig("hd.active", false);
+                return isD3D11 ? d3d11Renderer : d3d9Renderer;
+            }
+        }
 
-        public SDLRenderer(ICallbacks callbacks, IRendererConfig config) {
+        internal SDL_Window* Window => ActiveRenderer.Window;
+        internal SDL_Renderer* Renderer => ActiveRenderer.Renderer;
+
+        public event Action? OnUpdateRenderer;
+
+        public SDLRenderer(ICallbacks callbacks, IRendererConfig config, SceneManager sceneManager) {
+            this.config = config;
+            this.sceneManager = sceneManager;
+
+            Logger.LogInfo("Initializing SDL...");
+
             Assembly assembly = Assembly.GetExecutingAssembly();
             SDL3.SDL_SetAppMetadata("S4 Forge", assembly?.GetName()?.Version?.ToString() ?? "-", "com.s4-forge");
 
-            SDL3.SDL_Init(SDL_InitFlags.SDL_INIT_AUDIO | SDL_InitFlags.SDL_INIT_VIDEO);
+            var success = SDL3.SDL_Init(SDL_InitFlags.SDL_INIT_AUDIO | SDL_InitFlags.SDL_INIT_VIDEO);
+            if (!success) {
+                Logger.LogError(null, "Failed to initialize SDL: {0}", SDL3.SDL_GetError() ?? "Unknown error");
+                return;
+            }
+            Logger.LogInfo("SDL Version: {0}", SDL3.SDL_GetVersion());
 
-            SDL_PropertiesID windowProps = SDL3.SDL_CreateProperties();
-            SDL3.SDL_SetPointerProperty(windowProps, SDL3.SDL_PROP_WINDOW_CREATE_WIN32_HWND_POINTER, GameValues.Hwnd);
-            Window = SDL3.SDL_CreateWindowWithProperties(windowProps);
+            Logger.LogInfo("Initializing SDL Image and TTF...");
+            IMG_InitFlags loadedLibs = SDL3_image.IMG_Init(IMG_InitFlags.IMG_INIT_PNG);
+            if (!loadedLibs.HasFlag(IMG_InitFlags.IMG_INIT_PNG)) {
+                Logger.LogError(null, "Failed to initialize SDL Image: {0}", SDL3.SDL_GetError() ?? "Unknown error");
+                return;
+            }
+            success = SDL3_ttf.TTF_Init();
+            if (!success) {
+                Logger.LogError(null, "Failed to initialize SDL TTF: {0}", SDL3.SDL_GetError() ?? "Unknown error");
+                return;
+            }
+            Logger.LogInfo("Finished SDL Initialization");
 
-            callbacks.OnFrame += TransferToMainWindow;
+            Logger.LogInfo("Creating D3D Renderer...");
+            d3d11Renderer = new D3D11Renderer(config, this);
+            d3d9Renderer = new D3D9Renderer(config);
+            Logger.LogInfo("Finished D3D Renderer Creation");
+
+            ActiveRenderer.AttachToWindow();
+            ActiveRenderer.CreateRenderer(); //TODO FIX D3D9
+
+            callbacks.OnFrame += OnFrame;
         }
 
         private void UpdateRenderer(Surface d3dMainSurface) {
-            if (Renderer != null) {
-                var props = SDL3.SDL_GetRendererProperties(Renderer);
-                var rendererDevice = SDL3.SDL_GetPointerProperty(props, SDL3.SDL_PROP_RENDERER_D3D9_DEVICE_POINTER, IntPtr.Zero);
+            config.SetConfig<IntPtr>("forge.d3d9.direct3d", (IntPtr)d3dMainSurface.Direct3D);
+            config.SetConfig<IntPtr>("forge.d3d9.device", (IntPtr)d3dMainSurface.Device);
+            config.SetConfig<Surface>("forge.d3d9.surface", d3dMainSurface);
 
-                //Check to see if the device has changed:
-                // Reasons for change could be resolution change, device lost, etc.
-                // But because S4 manages the device we have to just destroy and recreate it ourself
-                // This "device" recreation happens one frame after resize so we can't rely on that (SDL itself would be smart enough to do that, but alas, S4 does it worse)
-                if (rendererDevice == (IntPtr)d3dMainSurface.Device)
-                    return;
+            if (!ActiveRenderer.CreateRenderer()) return;
 
-                //Renderer has changed, destroy the old one and let's create a new one.
-                SDL3.SDL_DestroyRenderer(Renderer);
-            }
-
-            SDL_PropertiesID rendererProps = SDL3.SDL_CreateProperties();
-            SDL3.SDL_SetStringProperty(rendererProps, SDL3.SDL_PROP_RENDERER_CREATE_NAME_STRING, "direct3d");
-            SDL3.SDL_SetPointerProperty(rendererProps, SDL3.SDL_PROP_RENDERER_CREATE_WINDOW_POINTER, (IntPtr)Window);
-            SDL3.SDL_SetPointerProperty(rendererProps, "Forge.renderer.d3d9", (IntPtr)d3dMainSurface.Direct3D);
-            SDL3.SDL_SetPointerProperty(rendererProps, "Forge.renderer.device", (IntPtr)d3dMainSurface.Device);
-            Renderer = SDL3.SDL_CreateRendererWithProperties(rendererProps);
-            string? sdlGetError = SDL3.SDL_GetError();
-            if (!string.IsNullOrEmpty(sdlGetError)) {
-                Logger.LogError(null, sdlGetError ?? "SDL Error detected");
-                SDL3.SDL_ClearError();
-            }
-
-            SDL3.SDL_SetRenderDrawBlendMode(Renderer, SDL_BlendMode.SDL_BLENDMODE_BLEND);
+            OnUpdateRenderer?.Invoke();
 
             string? name = SDL3.SDL_GetRendererName(Renderer);
             Logger.LogDebug("Created SDL Renderer: {0}", name ?? string.Empty);
-
-            //Vector2 screenSize = GetScreenSize();
-            //MainRenderTarget = SDL3.SDL_CreateTexture(Renderer, SDL_PixelFormat.SDL_PIXELFORMAT_RGBA8888, SDL_TextureAccess.SDL_TEXTUREACCESS_TARGET, (int)screenSize.X, (int)screenSize.Y);
-            //SetRenderTarget(MainRenderTarget);
         }
 
+        /// <summary>
+        /// Fetches the underlying group from either the element or the state
+        /// </summary>
+        SDLUIGroup GroupFromState(UIElement element, SceneGraphState sgs) {
+            IElementData? elementData = null;
+            if (element is UIGroup group) {
+                elementData = group.Data ??= new SDLUIGroup(this, group);
+            } else if (sgs.ContainerGroup != null) {
+                elementData = sgs.ContainerGroup.Data ??= new SDLUIGroup(this, sgs.ContainerGroup);
+            }
+
+            return elementData as SDLUIGroup ?? throw new InvalidOperationException("No group found in element or state");
+        }
+
+        /// <summary>
+        /// Pushes a component render command to the render queue of it's group
+        /// </summary>
+        /// <param name="component"></param>
+        /// <param name="parent"></param>
+        /// <param name="sgs"></param>
         public void RenderUIComponent(IUIComponent component, UIElement parent, SceneGraphState sgs) {
+            if (component.Data is not IUXComponent) {
+                // This is the first time we see this component...
+                // Let's create a renderer for it
 
+                switch (component) {
+                    case TextComponent tc:
+                        component.Data = new TextComponentRenderer(tc, parent);
+                        break;
+                    case NineSliceTextureComponent ns:
+                        component.Data = new NineSliceTextureComponentRenderer(ns, parent);
+                        break;
+                    case TextureComponent tc:
+                        component.Data = new TextureComponentRenderer(tc, parent);
+                        break;
+                    default:
+                        Logger.LogError(null, "Tried to render unknown UI component");
+                        component.Data = new NullComponentRenderer();
+                        break;
+                }
+            }
+
+            if (component.Data is not IUXComponent renderer) throw new ArgumentException("Component was created outside of the SDL bridge");
+
+            SDLUIGroup group = GroupFromState(parent, sgs);
+            group.EnqueueComponent(renderer, sgs);
         }
 
+        private Stack<(SDLUIGroup, SceneGraphState)> GroupRenderStack = new Stack<(SDLUIGroup, SceneGraphState)>();
         public void RenderGroup(UIGroup group, SceneGraphState sceneGraphState) {
+            var renderGroup = GroupFromState(group, sceneGraphState);
 
-        }
+            if (!group.IsDirty && renderGroup.QueueSize != 0)
+                Logger.LogWarn("Group {0} was not marked dirty, but commands were queued for it!", group.Id);
 
-        public void SetRenderTarget(SDL_Texture* texture) {
-            if (CurrentRenderTarget == texture) return;
+            if (group.IsDirty || renderGroup.QueueSize != 0) // refresh group when dirty, otherwise use cached version
+                renderGroup.FlushCommands(sceneGraphState);
 
-            SDL3.SDL_SetRenderTarget(Renderer, texture);
-            CurrentRenderTarget = texture;
+            GroupRenderStack.Push((renderGroup, sceneGraphState));
         }
 
         private ulong prevTime = 0;
 
         private int t = 0;
-        public void TransferToMainWindow(Surface? surface, int pillarBoxWidth) {
-            if (surface == null)
-                return;
-
-            UpdateRenderer(surface);
-            //SurfaceDesc locked = surface.Lock(null!, 1 | 0, null);
-            //SDL_Surface* gameFrameSurface = SDL3.SDL_CreateSurfaceFrom(
-            //    (int)locked.dwWidth, (int)locked.dwHeight,
-            //    SDL_PixelFormat.SDL_PIXELFORMAT_RGB565,
-            //    (IntPtr)locked.lpSurface, locked.lPitch
-            //);
-
-
-            t += 10;
-            if (t > 1000)
-                t = 0;
-            SDL_FRect test = new SDL_FRect() {
-                x = t,
-                y = 100,
-                w = 500,
-                h = 500
-            };
-            SetRenderTarget(null!);
-            //surface.SetAsDeviceRenderTarget();
-            surface.PrepareD3D();
-            //SDL3.SDL_SetRenderDrawColor(Renderer, 255, 100, 100, 125);
-            //SDL3.SDL_RenderFillRect(Renderer, &test);
-
-
-            //SDL3.SDL_SetRenderTarget(Renderer, null);
-
-            SDL3.SDL_SetRenderDrawColor(Renderer, 255, 100, 100, 125);
-            SDL3.SDL_RenderFillRect(Renderer, &test);
-            //SDL3.SDL_RenderTexture(Renderer, MainRenderTarget, null, null);
-
-            ulong frameTime = SDL3.SDL_GetTicks() - prevTime;
-            prevTime = SDL3.SDL_GetTicks();
-            float fps = (frameTime > 0) ? 1000.0f / frameTime : 0.0f;
-            SDL3.SDL_SetRenderDrawColor(Renderer, 255, 0, 255, 255);
-            SDL3.SDL_RenderDebugText(Renderer, 0, 0, $"FPS: {fps}");
-
-            //SDL3.SDL_RenderPresent(Renderer);
-            //surface.BeginDeviceScene();
+        public void TransferToMainWindow(Surface surface) {
             if (!SDL3.SDL_FlushRenderer(Renderer)) {
                 Logger.LogError(null, SDL3.SDL_GetError() ?? "SDL Error detected");
                 SDL3.SDL_ClearError();
@@ -154,17 +174,33 @@ namespace S4_GFXBridge.Rendering {
                 Logger.LogError(null, sdlGetError ?? "SDL Error detected");
                 SDL3.SDL_ClearError();
             }
-
-            surface.ResetD3D();
-            //surface.EndDeviceScene();
-
-            //ClearScreen();
-            //surface.Unlock(null!);
-            //SDL3.SDL_DestroySurface(gameFrameSurface);
         }
 
-        public void FrameRenderCallback() {
+        public void OnFrame(Surface? surface, int pillarBoxWidth) {
+            if (surface == null)
+                return;
 
+            UpdateRenderer(surface);
+
+            sceneManager.DoFrame();
+
+            ActiveRenderer.BeginPresent();
+
+            // Render all groups
+            while (GroupRenderStack.Count > 0) {
+                (SDLUIGroup group, SceneGraphState _) = GroupRenderStack.Pop();
+                SDL3.SDL_RenderTexture(Renderer, group.Target, null, null);
+            }
+
+            ulong frameTime = SDL3.SDL_GetTicks() - prevTime;
+            prevTime = SDL3.SDL_GetTicks();
+            float fps = (frameTime > 0) ? 1000.0f / frameTime : 0.0f;
+            SDL3.SDL_SetRenderDrawColor(Renderer, 255, 0, 255, 255);
+            SDL3.SDL_RenderDebugText(Renderer, 0, 0, $"FPS: {fps}");
+
+            TransferToMainWindow(surface);
+
+            ActiveRenderer.EndPresent();
         }
 
         public Vector2 GetScreenSize() {
