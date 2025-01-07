@@ -27,7 +27,7 @@ internal unsafe class TextComponentRenderer : IUXComponent {
     private TTF_TextEngine* engine;
     private TTF_Font* font;
 
-    private string componentText;
+    private string componentText = "";
     private TTF_Text* text;
 
     public TextComponentRenderer(TextComponent component, UIElement element) {
@@ -57,6 +57,7 @@ internal unsafe class TextComponentRenderer : IUXComponent {
     }
 
     private void PrepareText(float width) {
+        // TODO: add check for styling changes
         if (componentText == Component.Text && text != null)
             return;
 
@@ -64,11 +65,10 @@ internal unsafe class TextComponentRenderer : IUXComponent {
         TextStyle style = Component.Style;
         SDL3_ttf.TTF_SetFontStyle(font, (int)style.Type);
         SDL3_ttf.TTF_SetFontSize(font, TextFontSizeToDIP(style.Size));
-        SDL3_ttf.TTF_SetFontWrapAlignment(font, (TTF_HorizontalAlignment)style.Alignment);
+        SDL3_ttf.TTF_SetFontWrapAlignment(font, (TTF_HorizontalAlignment)style.HorizontalAlignment);
 
         if (text != null)
             SDL3_ttf.TTF_DestroyText(text);
-
 
         text = SDL3_ttf.TTF_CreateText(engine, font, componentText, 0);
         SDL3_ttf.TTF_SetTextWrapWidth(text, (int)width);
@@ -83,7 +83,13 @@ internal unsafe class TextComponentRenderer : IUXComponent {
 
         int textWidth = 0, textHeight = 0;
         SDL3_ttf.TTF_GetTextSize(text, &textWidth, &textHeight);
-        int heightOffset = (int)(elementSize.Y - textHeight) / 2;
+        TextStyleAlignment verticalAlignment = Component.Style.VerticalAlignment;
+        int heightOffset = verticalAlignment switch {
+            TextStyleAlignment.Start => 0,
+            TextStyleAlignment.Center => (int)(elementSize.Y - textHeight) / 2,
+            TextStyleAlignment.End => (int)(elementSize.Y - textHeight),
+            _ => throw new ArgumentOutOfRangeException(nameof(Component.Style.VerticalAlignment), verticalAlignment, null)
+        };
         float elementPosY = elementPos.Y + heightOffset;
         float elementPosX = elementPos.X;
 
@@ -92,7 +98,8 @@ internal unsafe class TextComponentRenderer : IUXComponent {
         SDL3_ttf.TTF_DrawRendererText(text, elementPosX + 3, elementPosY + 3);
 
         // Text:
-        SDL3_ttf.TTF_SetTextColor(text, 255, 255, 255, 255);
+        Vector4 color = Component.Style.Color;
+        SDL3_ttf.TTF_SetTextColor(text, (byte)color.X, (byte)color.Y, (byte)color.Z, (byte)color.W);
         SDL3_ttf.TTF_DrawRendererText(text, elementPosX, elementPosY);
     }
 }
