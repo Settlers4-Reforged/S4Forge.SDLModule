@@ -24,9 +24,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="ForgeUpdaterManifest" Version="0.3.1">
-            <PrivateAssets>all</PrivateAssets>
-        </PackageReference>
         <Reference Include="$(ProjectDir)Lib/SDL3-CS.dll">
             <PrivateAssets>all</PrivateAssets>
         </Reference>
@@ -57,10 +54,20 @@
         <Folder Include="Scripts\" />
     </ItemGroup>
 
-    <ItemGroup>
-        <ProjectReference Include="..\..\ForgeEngines\UX\UX-Engine.csproj" />
-        <ProjectReference Include="..\..\Forge\S4Forge.csproj" />
-    </ItemGroup>
+    <Choose>
+        <When Condition="'$(SolutionName)'=='S4ModdingFramework'">
+            <ItemGroup>
+                <ProjectReference Include="..\..\ForgeEngines\UX\UX-Engine.csproj" />
+                <ProjectReference Include="..\..\Forge\S4Forge.csproj" />
+            </ItemGroup>
+        </When>
+        <Otherwise>
+            <ItemGroup>
+                <PackageReference Include="S4Forge" Version="*" />
+                <PackageReference Include="UX-Engine" Version="*" />
+            </ItemGroup>
+        </Otherwise>
+    </Choose>
 
     <!--Forge Update System: -->
     <PropertyGroup>
@@ -73,6 +80,7 @@
         <ManifestClearResidualFiles>false</ManifestClearResidualFiles>
         <ManifestEmbedded>false</ManifestEmbedded>
         <ManifestEntryPoint>$(TargetFileName)</ManifestEntryPoint>
+        <ManifestLibraryFolder>Lib/</ManifestLibraryFolder>
     </PropertyGroup>
 
     <ItemGroup>
@@ -88,12 +96,15 @@
             <Verified>1.1.0</Verified>
         </ManifestRelationships>
 
-        <ManifestRelationships Include="UX-Engine">
+        <ManifestRelationships Include="UXEngine">
             <Manifest>Url to the newest manifest (e.g. latest release on gitlab)</Manifest>
             <Optional>false</Optional>
             <Minimum>1.*</Minimum>
             <Maximum>2.0.0</Maximum>
             <Verified>1.1.0</Verified>
         </ManifestRelationships>
+    </ItemGroup>
+    <ItemGroup>
+      <PackageReference Include="ForgeSDK" Version="1.0.0" />
     </ItemGroup>
 </Project>
