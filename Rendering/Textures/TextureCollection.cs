@@ -13,36 +13,33 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Forge.SDLBackend.Rendering.Textures {
-    internal class TextureCollection : ITextureCollection {
-        const string TEXTURE_PATH = "Textures";
-        Dictionary<string, Texture> textures = new Dictionary<string, Texture>();
+    internal class TextureCollection<TMap> : ITextureCollection<TMap> where TMap : Enum {
+        private Dictionary<string, Texture> textures = new Dictionary<string, Texture>();
 
-        private string collectionId;
+        public string Path { get; private set; }
 
-        public TextureCollection(string id) {
-            this.collectionId = id;
-
+        public TextureCollection(string path) {
+            this.Path = path;
+            if (!System.IO.Path.IsPathRooted(this.Path)) {
+                throw new ArgumentException($"Path (${path}) must be absolute", nameof(path));
+            }
             LoadTextures(DI.Resolve<SDLRenderer>());
         }
 
         private void LoadTextures(SDLRenderer renderer) {
-            if (renderer == null)
-                throw new ArgumentNullException(nameof(renderer));
+            ArgumentNullException.ThrowIfNull(renderer, nameof(renderer));
 
             // Load textures from disk
             textures.Clear();
 
-            var env = DI.Resolve<PluginEnvironment<UXEngineSDLRenderer>>();
-            string path = Path.Join(env.Path, TEXTURE_PATH, collectionId.ToString());
+            Logger.LogDebug("UX Engine requested loading of {0}", Path);
 
-            Logger.LogDebug("UX Engine requested loading of {0}", path);
-
-            if (!Directory.Exists(path)) {
-                Logger.LogError(null, "Texture collection {0} not found", path);
+            if (!Directory.Exists(Path)) {
+                Logger.LogError(null, "Texture collection {0} not found", Path);
                 return;
             }
 
-            List<Texture> loadedTextures = Texture.FromFolder(path, renderer);
+            List<Texture> loadedTextures = Texture.FromFolder(Path, renderer);
             foreach (var texture in loadedTextures) {
                 textures[texture.Name] = texture;
             }
@@ -50,7 +47,7 @@ namespace Forge.SDLBackend.Rendering.Textures {
 
         public ITexture GetTexture(string id) {
             if (!textures.TryGetValue(id, out Texture? texture))
-                throw new Exception($"Texture {id} not found in collection {collectionId}");
+                throw new Exception($"Texture {id} not found in collection {Path}");
 
             return texture;
         }

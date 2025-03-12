@@ -1,24 +1,33 @@
-﻿using Forge.UX.Rendering.Texture;
+﻿using DryIoc;
+
+using Forge.Config;
+using Forge.Engine;
+using Forge.UX.Rendering.Texture;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Forge.SDLBackend.Rendering.Textures {
     internal class TextureCollectionManager : ITextureCollectionManager {
-        private readonly Dictionary<string, TextureCollection> collections = new Dictionary<string, TextureCollection>();
+        private const string TEXTURE_PATH = "Textures";
 
-        public ITextureCollection GetCollection(string id) {
-            if (!collections.ContainsKey(id)) {
-                collections[id] = new TextureCollection(id);
-            }
-            return collections[id];
+        public ITextureCollection<TMap> Register<TMap>(string path) where TMap : Enum {
+            TextureCollection<TMap> textureCollection = new TextureCollection<TMap>(path);
+            DI.Dependencies.RegisterInstance<ITextureCollection<TMap>>(textureCollection);
+
+            return textureCollection;
         }
 
-        public ITexture Get(string col, string id) {
-            return GetCollection(col).GetTexture(id);
+        public void RegisterDefaults() {
+            string pluginPath = DI.Resolve<PluginEnvironment<UXEngineSDLRenderer>>().Path;
+            string texturePath = Path.Combine(pluginPath, TEXTURE_PATH);
+
+            Register<ForgeTextureMap>(Path.Combine(texturePath, "ForgeUI"));
+            Register<S4MainUITextureMap>(Path.Combine(texturePath, "MainUI"));
         }
     }
 }
