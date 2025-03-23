@@ -1,6 +1,8 @@
 ﻿using Forge.UX.Rendering;
 using Forge.UX.UI;
 using Forge.UX.UI.Elements.Grouping;
+using Forge.UX.UI.Elements.Grouping.Display;
+using Forge.UX.UI.Elements.Grouping.Interaction;
 
 using S4_GFXBridge.Rendering;
 
@@ -51,9 +53,25 @@ namespace Forge.SDLBackend.Rendering.Components {
             SDL3.SDL_RenderClear(Renderer.Renderer);
             SDL3.SDL_SetRenderDrawBlendMode(Renderer.Renderer, SDL_BlendMode.SDL_BLENDMODE_BLEND);
 
+            Vector4 cr = sceneGraphState.ApplyGroup(Group).ClippingRect;
+            SDL_Rect destination = new SDL_Rect() {
+                x = (int)cr.X,
+                y = (int)cr.Y,
+                w = (int)cr.Z,
+                h = (int)cr.W,
+            };
+            SDL3.SDL_SetRenderClipRect(Renderer.Renderer, &destination);
+
             while (RenderQueue.Count > 0) {
                 (IUXComponent component, SceneGraphState atState) = RenderQueue.Dequeue();
                 component.Render(Renderer.Renderer, atState);
+            }
+
+            bool clippingRectDebug = false;
+            if (clippingRectDebug) {
+                SDL3.SDL_SetRenderDrawColor(Renderer.Renderer, 0, 0, 255, 100);
+                SDL3.SDL_RenderFillRect(Renderer.Renderer, null);
+                SDL3.SDL_SetRenderDrawColor(Renderer.Renderer, 0, 0, 0, 0);
             }
         }
 
