@@ -12,6 +12,7 @@
   "version": "1.0.0",
   "type": "Plugin",
   "entryPoint": "S4Forge-SDLBackend.dll",
+  "libraryFolder": "Lib/",
   "relationships": [
     {
       "id": "Forge",
@@ -24,7 +25,7 @@
       }
     },
     {
-      "id": "UX-Engine",
+      "id": "UXEngine",
       "optional": false,
       "manifest": "Url to the newest manifest (e.g. latest release on gitlab)",
       "compatibility": {
