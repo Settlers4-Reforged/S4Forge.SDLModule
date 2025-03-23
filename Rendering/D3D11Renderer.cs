@@ -45,6 +45,7 @@ namespace Forge.SDLBackend.Rendering {
                 SDL_PropertiesID props = SDL3.SDL_GetRendererProperties(Renderer);
                 IntPtr rendererDevice = SDL3.SDL_GetPointerProperty(props, SDL3.SDL_PROP_RENDERER_D3D11_DEVICE_POINTER, IntPtr.Zero);
 
+
                 //Check to see if the device has changed:
                 // Reasons for change could be resolution change, device lost, etc.
                 // But because the HD Patch manages the device we have to just destroy and reset it
@@ -75,10 +76,21 @@ namespace Forge.SDLBackend.Rendering {
 
             SDL3.SDL_SetRenderDrawBlendMode(Renderer, SDL_BlendMode.SDL_BLENDMODE_BLEND);
 
+            CreateRenderTexture();
+
             return true;
         }
 
         public void BeginPresent() {
+            if (SDLTargetTexture == null)
+                CreateRenderTexture();
+
+            SDL3.SDL_SetRenderTarget(Renderer, SDLTargetTexture);
+            SDL3.SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 0);
+            SDL3.SDL_RenderClear(Renderer);
+        }
+
+        private void CreateRenderTexture() {
             if (SDLTargetTexture != null) {
                 SDL3.SDL_DestroyTexture(SDLTargetTexture);
             }
@@ -91,10 +103,6 @@ namespace Forge.SDLBackend.Rendering {
             SDL3.SDL_SetNumberProperty(textureProps, SDL3.SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER, (long)SDL_TextureAccess.SDL_TEXTUREACCESS_TARGET);
             SDL3.SDL_SetNumberProperty(textureProps, SDL3.SDL_PROP_TEXTURE_CREATE_FORMAT_NUMBER, (long)SDL_PixelFormat.SDL_PIXELFORMAT_ARGB8888);
             SDLTargetTexture = SDL3.SDL_CreateTextureWithProperties(Renderer, textureProps);
-
-            SDL3.SDL_SetRenderTarget(Renderer, SDLTargetTexture);
-            SDL3.SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 0);
-            SDL3.SDL_RenderClear(Renderer);
         }
 
         public void EndPresent() {
