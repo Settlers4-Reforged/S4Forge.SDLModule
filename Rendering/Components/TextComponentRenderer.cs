@@ -30,6 +30,8 @@ internal unsafe class TextComponentRenderer : IUXComponent {
     private string componentText = "";
     private TTF_Text* text;
 
+    int measuredWidth = 0, measuredHeight = 0;
+
     public TextComponentRenderer(TextComponent component, UIElement element) {
         Component = component;
         Element = element;
@@ -71,7 +73,12 @@ internal unsafe class TextComponentRenderer : IUXComponent {
             SDL3_ttf.TTF_DestroyText(text);
 
         text = SDL3_ttf.TTF_CreateText(engine, font, componentText, 0);
-        SDL3_ttf.TTF_SetTextWrapWidth(text, (int)width);
+        SDL3_ttf.TTF_SetTextWrapWidth(text, 0);
+
+        fixed (int* mWidth = &measuredWidth, mHeight = &measuredHeight) {
+            SDL3_ttf.TTF_GetStringSizeWrapped(font, componentText, new UIntPtr((uint)componentText.Length), 0,
+                mWidth, mHeight);
+        }
     }
 
     public void Render(SDL_Renderer* renderer, SceneGraphState sceneGraphState) {
@@ -83,6 +90,9 @@ internal unsafe class TextComponentRenderer : IUXComponent {
 
         int textWidth = 0, textHeight = 0;
         SDL3_ttf.TTF_GetTextSize(text, &textWidth, &textHeight);
+
+        Component.CalculatedSize = new Vector2(measuredWidth, textHeight) + Vector2.One * 50;
+
         TextStyleAlignment verticalAlignment = Component.Style.VerticalAlignment;
         int heightOffset = verticalAlignment switch {
             TextStyleAlignment.Start => 0,
