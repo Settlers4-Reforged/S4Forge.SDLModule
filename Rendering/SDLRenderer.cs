@@ -1,15 +1,9 @@
-﻿using DryIoc;
-
-using Forge.Logging;
-using Forge.S4;
+﻿using Forge.Logging;
 using Forge.S4.Callbacks;
 using Forge.SDLBackend.Rendering;
 using Forge.SDLBackend.Rendering.Components;
-using Forge.SDLBackend.Rendering.Textures;
 using Forge.SDLBackend.Util;
 using Forge.UX.Rendering;
-using Forge.UX.Rendering.Text;
-using Forge.UX.Rendering.Texture;
 using Forge.UX.UI;
 using Forge.UX.UI.Components;
 using Forge.UX.UI.Elements;
@@ -23,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Reflection;
-using System.Runtime.InteropServices;
 
 namespace S4_GFXBridge.Rendering {
     public unsafe class SDLRenderer : IRenderer {
@@ -46,6 +39,9 @@ namespace S4_GFXBridge.Rendering {
         internal SDL_Renderer* Renderer => ActiveRenderer.Renderer;
 
         public event Action? OnUpdateRenderer;
+
+        private Stack<Vector4> debugChanges = new Stack<Vector4>();
+        private Stack<Vector4> debugHover = new Stack<Vector4>();
 
         public SDLRenderer(ICallbacks callbacks, IRendererConfig config, SceneManager sceneManager) {
             this.config = config;
@@ -95,6 +91,7 @@ namespace S4_GFXBridge.Rendering {
             if (!ActiveRenderer.CreateRenderer()) return;
 
             OnUpdateRenderer?.Invoke();
+            //TODO: Add force redraw for every ui element
 
             string? name = SDL3.SDL_GetRendererName(Renderer);
             Logger.LogDebug("Created SDL Renderer: {0}", name ?? string.Empty);
@@ -146,6 +143,13 @@ namespace S4_GFXBridge.Rendering {
 
             SDLUIGroup group = GroupFromState(parent, sgs);
             group.EnqueueComponent(renderer, sgs);
+
+            var rect = sgs.TranslateComponent(parent, component);
+            debugChanges.Push(new Vector4(rect.position.X, rect.position.Y, rect.size.X, rect.size.Y));
+
+            if (parent.IsMouseHover) {
+                debugHover.Push(new Vector4(rect.position.X, rect.position.Y, rect.size.X, rect.size.Y));
+            }
         }
 
         private Stack<(SDLUIGroup, SceneGraphState)> GroupRenderStack = new Stack<(SDLUIGroup, SceneGraphState)>();
@@ -162,8 +166,6 @@ namespace S4_GFXBridge.Rendering {
         }
 
         private ulong prevTime = 0;
-
-        private int t = 0;
         public void TransferToMainWindow(Surface surface) {
             if (!SDL3.SDL_FlushRenderer(Renderer)) {
                 Logger.LogError(null, SDL3.SDL_GetError() ?? "SDL Error detected");
@@ -197,6 +199,35 @@ namespace S4_GFXBridge.Rendering {
                 (SDLUIGroup group, SceneGraphState _) = GroupRenderStack.Pop();
                 SDLUtil.HandleSDLError(SDL3.SDL_RenderTexture(Renderer, group.Target, null, null), "Error during group present");
             }
+
+            while (debugChanges.Count > 0) {
+                Vector4 rect = debugChanges.Pop();
+                bool drawCommandsDebug = false;
+                if (drawCommandsDebug) {
+                    SDL3.SDL_SetRenderDrawColor(Renderer, 255, 0, 255, 100);
+                    SDL_FRect sdlFRect = new SDL_FRect() {
+                        x = rect.X,
+                        y = rect.Y,
+                        w = rect.Z,
+                        h = rect.W
+                    };
+                    SDL3.SDL_RenderFillRect(Renderer, &sdlFRect);
+                }
+            }
+
+            while (debugHover.Count > 0) {
+                Vector4 rect = debugHover.Pop();
+                bool hoverDebug = false;
+                if (hoverDebug) {
+                    SDL3.SDL_SetRenderDrawColor(Renderer, 0, 255, 0, 255);
+                    SDL_FRect sdlFRect = new SDL_FRect() {
+                        x = rect.X,
+                        y = rect.Y,
+                        w = rect.Z,
+                        h = rect.W
+                    };
+                    SDL3.SDL_RenderRect(Renderer, &sdlFRect);
+                }
             }
 
             ulong frameTime = SDL3.SDL_GetTicks() - prevTime;
