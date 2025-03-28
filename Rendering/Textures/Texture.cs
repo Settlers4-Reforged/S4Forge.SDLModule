@@ -8,9 +8,6 @@ using SDL;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Forge.SDLBackend.Rendering.Textures {
     internal unsafe class Texture : ITexture, IDisposable {
@@ -19,7 +16,10 @@ namespace Forge.SDLBackend.Rendering.Textures {
 
         public string Name { get; }
 
+        private string File { get; set; }
+
         public SDL_Texture* SDLTexture { get; set; }
+        private SDLRenderer Renderer { get; set; }
 
         public static List<Texture> FromFolder(string folder, SDLRenderer renderer) {
             List<Texture> textures = new List<Texture>();
@@ -37,23 +37,46 @@ namespace Forge.SDLBackend.Rendering.Textures {
         }
 
         public Texture(string file, SDLRenderer renderer) {
-            SDL_Texture* texture = SDL3_image.IMG_LoadTexture(renderer.Renderer, file);
-            if (texture == null) {
-                string error = SDL3.SDL_GetError() ?? "Unknown SDL error";
-                throw new Exception($"Failed to load texture from {file} - {error}");
-            }
+            Renderer = renderer;
 
-            Width = texture->w;
-            Height = texture->h;
+            File = file;
             Name = Path.GetFileNameWithoutExtension(file);
 
+            var texture = Load();
+            Width = texture->w;
+            Height = texture->h;
+            SDLTexture = texture;
+
+            renderer.OnUpdateRenderer += RefreshTexture;
+        }
+
+        private SDL_Texture* Load() {
+            SDL_Texture* texture = SDL3_image.IMG_LoadTexture(Renderer.Renderer, File);
+            if (texture == null) {
+                string error = SDL3.SDL_GetError() ?? "Unknown SDL error";
+                throw new Exception($"Failed to load texture from {File} - {error}");
+            }
+
+            return texture;
+        }
+
+        public void RefreshTexture() {
+            if (SDLTexture != null) {
+                SDL3.SDL_DestroyTexture(SDLTexture);
+                SDLTexture = null;
+            }
+
+            var texture = Load();
             SDLTexture = texture;
         }
 
 
         public void Dispose() {
+            Renderer.OnUpdateRenderer -= RefreshTexture;
+
             if (SDLTexture != null) {
                 SDL3.SDL_DestroyTexture(SDLTexture);
+                SDLTexture = null;
             }
         }
     }
