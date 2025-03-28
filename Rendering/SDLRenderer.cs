@@ -6,6 +6,7 @@ using Forge.S4.Callbacks;
 using Forge.SDLBackend.Rendering;
 using Forge.SDLBackend.Rendering.Components;
 using Forge.SDLBackend.Rendering.Textures;
+using Forge.SDLBackend.Util;
 using Forge.UX.Rendering;
 using Forge.UX.Rendering.Text;
 using Forge.UX.Rendering.Texture;
@@ -81,7 +82,7 @@ namespace S4_GFXBridge.Rendering {
             Logger.LogInfo("Finished D3D Renderer Creation");
 
             ActiveRenderer.AttachToWindow();
-            ActiveRenderer.CreateRenderer(); //TODO FIX D3D9
+            ActiveRenderer.CreateRenderer();
 
             callbacks.OnFrame += OnFrame;
         }
@@ -182,14 +183,20 @@ namespace S4_GFXBridge.Rendering {
 
             UpdateRenderer(surface);
 
+            ActiveRenderer.PrepareRender();
+            DXDebugHelper.BeginEvent(0x00ff00, "Scene Frame Render");
             sceneManager.DoFrame();
+            DXDebugHelper.EndEvent();
 
+            DXDebugHelper.BeginEvent(0x00ff00, "Present Groups");
             ActiveRenderer.BeginPresent();
+            SDL3.SDL_SetRenderClipRect(Renderer, null);
 
             // Render all groups
             while (GroupRenderStack.Count > 0) {
                 (SDLUIGroup group, SceneGraphState _) = GroupRenderStack.Pop();
-                SDL3.SDL_RenderTexture(Renderer, group.Target, null, null);
+                SDLUtil.HandleSDLError(SDL3.SDL_RenderTexture(Renderer, group.Target, null, null), "Error during group present");
+            }
             }
 
             ulong frameTime = SDL3.SDL_GetTicks() - prevTime;
@@ -198,7 +205,11 @@ namespace S4_GFXBridge.Rendering {
             SDL3.SDL_SetRenderDrawColor(Renderer, 255, 0, 255, 255);
             SDL3.SDL_RenderDebugText(Renderer, 0, 0, $"FPS: {fps}");
 
+            DXDebugHelper.EndEvent();
+
+            DXDebugHelper.BeginEvent(0x00ff00, "Transfer to Main Window");
             TransferToMainWindow(surface);
+            DXDebugHelper.EndEvent();
 
             ActiveRenderer.EndPresent();
         }
@@ -209,10 +220,6 @@ namespace S4_GFXBridge.Rendering {
             return new Vector2(width, height);
         }
 
-        public void ClearScreen() {
-            //SetRenderTarget(MainRenderTarget);
-            //SDL3.SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 0);
-            //SDL3.SDL_RenderClear(Renderer);
-        }
+        public void ClearScreen() { }
     }
 }

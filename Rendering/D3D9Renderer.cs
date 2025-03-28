@@ -54,6 +54,8 @@ namespace Forge.SDLBackend.Rendering {
             SDL3.SDL_SetPointerProperty(rendererProps, SDL3.SDL_PROP_RENDERER_CREATE_WINDOW_POINTER, (IntPtr)Window);
             SDL3.SDL_SetPointerProperty(rendererProps, "Forge.renderer.d3d9", D3D9Direct3D);
             SDL3.SDL_SetPointerProperty(rendererProps, "Forge.renderer.device", D3D9Device);
+
+
             Renderer = SDL3.SDL_CreateRendererWithProperties(rendererProps);
             string? sdlGetError = SDL3.SDL_GetError();
             if (!string.IsNullOrEmpty(sdlGetError)) {
@@ -62,12 +64,21 @@ namespace Forge.SDLBackend.Rendering {
             }
 
             SDL3.SDL_SetRenderDrawBlendMode(Renderer, SDL_BlendMode.SDL_BLENDMODE_BLEND);
+
             return true;
+        }
+
+        public void PrepareRender() {
+            D3D9MainSurface.PrepareD3D();
         }
 
         public void BeginPresent() {
             SDL3.SDL_SetRenderTarget(Renderer, null);
-            D3D9MainSurface.PrepareD3D();
+
+            // The game uses multiple render targets when rendering the in game screen
+            // This uses the "cached" main render target for the final render, acquired by the PrepareD3D call of the class
+            D3D9MainSurface.RestoreMainRenderTarget();
+            SDL3.SDL_SetRenderViewport(Renderer, null);
         }
 
         public void EndPresent() {

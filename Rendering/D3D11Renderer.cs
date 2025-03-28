@@ -81,6 +81,10 @@ namespace Forge.SDLBackend.Rendering {
             return true;
         }
 
+        public void PrepareRender() {
+
+        }
+
         public void BeginPresent() {
             if (SDLTargetTexture == null)
                 CreateRenderTexture();

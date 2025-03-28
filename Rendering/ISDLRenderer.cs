@@ -14,6 +14,7 @@ namespace Forge.SDLBackend.Rendering {
         void AttachToWindow();
         bool CreateRenderer();
 
+        void PrepareRender();
         void BeginPresent();
         void EndPresent();
     }
