@@ -1,4 +1,6 @@
-﻿using Forge.SDLBackend.Rendering.Textures;
+﻿using Forge.Logging;
+using Forge.SDLBackend.Rendering.Textures;
+using Forge.SDLBackend.Util;
 using Forge.UX.Rendering;
 using Forge.UX.UI;
 using Forge.UX.UI.Components;
@@ -34,20 +36,26 @@ internal unsafe class TextureComponentRenderer : IUXComponent {
 
         bool hasEffect = true;
 
-        if (Component.Effects.HasFlag(Effects.Highlight)) {
-            float scale = 1.2f;
-            SDL3.SDL_SetTextureColorModFloat(texture.SDLTexture, scale, scale, scale);
-        }
 
         if (Component.Effects.HasFlag(Effects.GrayScale)) {
             float scale = 0.5f;
-            SDL3.SDL_SetTextureColorModFloat(texture.SDLTexture, scale, scale, scale);
+            SDLUtil.HandleSDLError(SDL3.SDL_SetTextureColorModFloat(texture.SDLTexture, scale, scale, scale));
         }
 
-        SDL3.SDL_RenderTexture(renderer, texture.SDLTexture, null, &destination);
+        SDLUtil.HandleSDLError(SDL3.SDL_RenderTexture(renderer, texture.SDLTexture, null, &destination));
+
+
+        if (Component.Effects.HasFlag(Effects.Highlight)) {
+            float scale = 0.2f;
+            SDLUtil.HandleSDLError(SDL3.SDL_SetTextureColorModFloat(texture.SDLTexture, scale, scale, scale));
+            SDLUtil.HandleSDLError(SDL3.SDL_SetTextureBlendMode(texture.SDLTexture, SDL_BlendMode.SDL_BLENDMODE_ADD));
+            SDLUtil.HandleSDLError(SDL3.SDL_RenderTexture(renderer, texture.SDLTexture, null, &destination));
+            SDLUtil.HandleSDLError(SDL3.SDL_SetTextureBlendMode(texture.SDLTexture, SDL_BlendMode.SDL_BLENDMODE_BLEND));
+        }
+
 
         if (Component.Effects != Effects.None) {
-            SDL3.SDL_SetTextureColorModFloat(texture.SDLTexture, 1, 1, 1);
+            SDLUtil.HandleSDLError(SDL3.SDL_SetTextureColorModFloat(texture.SDLTexture, 1, 1, 1));
         }
     }
 }

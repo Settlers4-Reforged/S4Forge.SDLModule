@@ -3,6 +3,7 @@
 using Forge.Config;
 using Forge.Engine;
 using Forge.Logging;
+using Forge.SDLBackend.Util;
 using Forge.UX.Rendering;
 using Forge.UX.Rendering.Text;
 using Forge.UX.UI;
@@ -24,6 +25,7 @@ internal unsafe class TextComponentRenderer : IUXComponent {
     private UIElement Element { get; set; }
     private TextComponent Component { get; set; }
 
+    private SDL_Renderer* renderer;
     private TTF_TextEngine* engine;
     private TTF_Font* font;
 
@@ -37,13 +39,15 @@ internal unsafe class TextComponentRenderer : IUXComponent {
         Element = element;
     }
 
-    private void PrepareTextEngine(SDL_Renderer* renderer) {
+    private void PrepareTextEngine() {
         if (engine != null)
             return;
 
         PluginEnvironment<UXEngineSDLRenderer> env = DI.Resolve<PluginEnvironment<UXEngineSDLRenderer>>();
         engine = SDL3_ttf.TTF_CreateRendererTextEngine(renderer);
-        font = SDL3_ttf.TTF_OpenFont(Path.Join(env.Path, "Fonts", "arial.ttf"), 16.0f);
+
+        if (font == null)
+            font = SDL3_ttf.TTF_OpenFont(Path.Join(env.Path, "Fonts", "arial.ttf"), 16.0f);
     }
 
     public static float TextFontSizeToDIP(TextStyleSize size) {
@@ -84,8 +88,16 @@ internal unsafe class TextComponentRenderer : IUXComponent {
     public void Render(SDL_Renderer* renderer, SceneGraphState sceneGraphState) {
         (Vector2 elementPos, Vector2 elementSize) = sceneGraphState.TranslateComponent(Element, Component);
 
+        if (renderer != this.renderer) {
+            SDL3_ttf.TTF_DestroyText(text);
+            text = null;
+            SDL3_ttf.TTF_DestroyRendererTextEngine(engine);
+            engine = null;
+        }
 
-        PrepareTextEngine(renderer);
+        this.renderer = renderer;
+
+        PrepareTextEngine();
         PrepareText(elementSize.X);
 
         int textWidth = 0, textHeight = 0;
@@ -105,11 +117,11 @@ internal unsafe class TextComponentRenderer : IUXComponent {
 
         // Shadow:
         SDL3_ttf.TTF_SetTextColor(text, 0, 0, 0, 255);
-        SDL3_ttf.TTF_DrawRendererText(text, elementPosX + 3, elementPosY + 3);
+        SDLUtil.HandleSDLError(SDL3_ttf.TTF_DrawRendererText(text, elementPosX + 3, elementPosY + 3));
 
         // Text:
         Vector4 color = Component.Style.Color;
         SDL3_ttf.TTF_SetTextColor(text, (byte)color.X, (byte)color.Y, (byte)color.Z, (byte)color.W);
-        SDL3_ttf.TTF_DrawRendererText(text, elementPosX, elementPosY);
+        SDLUtil.HandleSDLError(SDL3_ttf.TTF_DrawRendererText(text, elementPosX, elementPosY));
     }
 }

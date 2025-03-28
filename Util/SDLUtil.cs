@@ -3,20 +3,21 @@
 using SDL;
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Forge.SDLBackend.Util {
     internal static class SDLUtil {
-        public static bool HandleSDLError(bool success, string? message = null) {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Conditional("DEBUG")]
+        public static void HandleSDLError(bool success, string? message = null) {
             if (!success) {
                 LogSDLError(message);
             }
-            return success;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Conditional("DEBUG")]
         public static void LogSDLError(string? message) {
             string? sdlGetError = SDL3.SDL_GetError();
             if (!string.IsNullOrEmpty(sdlGetError)) {

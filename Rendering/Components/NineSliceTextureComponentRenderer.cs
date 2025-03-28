@@ -1,4 +1,6 @@
-﻿using Forge.SDLBackend.Rendering.Textures;
+﻿using Forge.Logging;
+using Forge.SDLBackend.Rendering.Textures;
+using Forge.SDLBackend.Util;
 using Forge.UX.UI;
 using Forge.UX.UI.Components;
 using Forge.UX.UI.Elements;
@@ -33,7 +35,7 @@ internal unsafe class NineSliceTextureComponentRenderer : IUXComponent {
         Vector4 cornerWidths = Component.CornerWidths;
         Vector4 edgeWidths = Component.EdgeWidths;
 
-        SDL3.SDL_RenderTexture9Grid(renderer, texture.SDLTexture, null, edgeWidths.X, edgeWidths.X, edgeWidths.Y,
-            edgeWidths.Y, 0.75f, &destination);
+        SDLUtil.HandleSDLError(SDL3.SDL_RenderTexture9Grid(renderer, texture.SDLTexture, null, edgeWidths.X, edgeWidths.X, edgeWidths.Y,
+            edgeWidths.Y, 0.5f, &destination));
     }
 }
