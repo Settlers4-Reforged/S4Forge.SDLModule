@@ -23,7 +23,7 @@ namespace Forge.SDLBackend.Rendering.Textures {
         }
 
         public void RegisterDefaults() {
-            string pluginPath = DI.Resolve<PluginEnvironment<UXEngineSDLRenderer>>().Path;
+            string pluginPath = DI.Resolve<ModuleEnvironment<UXEngineSDLRenderer>>().Path;
             string texturePath = Path.Combine(pluginPath, TEXTURE_PATH);
 
             Register<ForgeTextureMap>(Path.Combine(texturePath, "ForgeUI"));

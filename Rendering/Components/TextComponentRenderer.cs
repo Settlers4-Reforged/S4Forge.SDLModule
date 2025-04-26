@@ -43,7 +43,7 @@ internal unsafe class TextComponentRenderer : IUXComponent {
         if (engine != null)
             return;
 
-        PluginEnvironment<UXEngineSDLRenderer> env = DI.Resolve<PluginEnvironment<UXEngineSDLRenderer>>();
+        ModuleEnvironment<UXEngineSDLRenderer> env = DI.Resolve<ModuleEnvironment<UXEngineSDLRenderer>>();
         engine = SDL3_ttf.TTF_CreateRendererTextEngine(renderer);
 
         if (font == null)

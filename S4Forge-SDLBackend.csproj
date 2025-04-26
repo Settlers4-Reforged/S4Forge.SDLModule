@@ -64,18 +64,17 @@
         <Otherwise>
             <ItemGroup>
                 <PackageReference Include="S4Forge" Version="*" />
-                <PackageReference Include="UX-Engine" Version="*" />
+                <PackageReference Include="S4Forge.UX-Engine" Version="*" />
             </ItemGroup>
         </Otherwise>
     </Choose>
 
     <!--Forge Update System: -->
     <PropertyGroup>
-        <ProjectType>Plugin</ProjectType>
+        <ProjectType>Module</ProjectType>
 
         <ManifestId>UX-Engine-SDL</ManifestId>
         <ManifestName>UX-Engine SDL Renderer</ManifestName>
-        <ManifestType>$(ProjectType)</ManifestType>
         <ManifestAssetUrl>https://</ManifestAssetUrl>
         <ManifestClearResidualFiles>false</ManifestClearResidualFiles>
         <ManifestEmbedded>false</ManifestEmbedded>
@@ -84,8 +83,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ManifestIgnoredEntries Include="log.txt" />
-
         <ManifestIgnoredEntries Include="textures/themes/" />
 
         <ManifestRelationships Include="Forge">
@@ -105,6 +102,6 @@
         </ManifestRelationships>
     </ItemGroup>
     <ItemGroup>
-      <PackageReference Include="ForgeSDK" Version="1.0.0" />
+      <PackageReference Include="S4Forge.SDK" Version="0.5.*" />
     </ItemGroup>
 </Project>

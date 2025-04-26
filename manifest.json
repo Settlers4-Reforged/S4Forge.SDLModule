@@ -5,12 +5,11 @@
     "uri": "https://"
   },
   "ignoredEntries": [
-    "log.txt",
     "textures/themes/"
   ],
   "clearResidualFiles": false,
   "version": "1.0.0",
-  "type": "Plugin",
+  "type": "module",
   "entryPoint": "S4Forge-SDLBackend.dll",
   "libraryFolder": "Lib/",
   "relationships": [
