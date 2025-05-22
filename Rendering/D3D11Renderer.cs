@@ -2,8 +2,6 @@
 using Forge.S4;
 using Forge.UX.Rendering;
 
-using Microsoft.DirectX.DirectDraw;
-
 using S4_GFXBridge.Rendering;
 
 using SDL;
