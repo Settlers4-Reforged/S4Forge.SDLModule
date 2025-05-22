@@ -51,7 +51,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Scripts\" />
+      <Compile Remove="Scripts\**" />
+      <EmbeddedResource Remove="Scripts\**" />
+      <None Remove="Scripts\**" />
     </ItemGroup>
 
     <Choose>
@@ -75,7 +77,6 @@
 
         <ManifestId>UX-Engine-SDL</ManifestId>
         <ManifestName>UX-Engine SDL Renderer</ManifestName>
-        <ManifestAssetUrl>https://</ManifestAssetUrl>
         <ManifestClearResidualFiles>false</ManifestClearResidualFiles>
         <ManifestEmbedded>false</ManifestEmbedded>
         <ManifestEntryPoint>$(TargetFileName)</ManifestEntryPoint>
