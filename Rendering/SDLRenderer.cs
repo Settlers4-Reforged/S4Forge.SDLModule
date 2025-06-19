@@ -84,9 +84,9 @@ namespace Forge.SDLBackend.Rendering {
         }
 
         private void UpdateRenderer(Surface d3dMainSurface) {
-            config.SetConfig<IntPtr>("forge.d3d9.direct3d", (IntPtr)d3dMainSurface.Direct3D);
-            config.SetConfig<IntPtr>("forge.d3d9.device", (IntPtr)d3dMainSurface.Device);
-            config.SetConfig<Surface>("forge.d3d9.surface", d3dMainSurface);
+            config.SetConfig("forge.d3d9.direct3d", (IntPtr)d3dMainSurface.Direct3D);
+            config.SetConfig("forge.d3d9.device", (IntPtr)d3dMainSurface.Device);
+            config.SetConfig("forge.d3d9.surface", d3dMainSurface);
 
             if (!ActiveRenderer.CreateRenderer()) return;
 
@@ -232,7 +232,7 @@ namespace Forge.SDLBackend.Rendering {
 
             ulong frameTime = SDL3.SDL_GetTicks() - prevTime;
             prevTime = SDL3.SDL_GetTicks();
-            float fps = (frameTime > 0) ? 1000.0f / frameTime : 0.0f;
+            float fps = frameTime > 0 ? 1000.0f / frameTime : 0.0f;
             SDL3.SDL_SetRenderDrawColor(Renderer, 255, 0, 255, 255);
             SDL3.SDL_RenderDebugText(Renderer, 0, 0, $"FPS: {fps}");
 
@@ -250,7 +250,5 @@ namespace Forge.SDLBackend.Rendering {
             SDL3.SDL_GetWindowSize(Window, &width, &height);
             return new Vector2(width, height);
         }
-
-        public void ClearScreen() { }
     }
 }
