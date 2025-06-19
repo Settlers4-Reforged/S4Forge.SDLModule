@@ -1,7 +1,10 @@
-﻿using Forge.Logging;
+﻿using DryIoc;
+
+using Forge.Config;
+using Forge.Logging;
 using Forge.S4.Callbacks;
-using Forge.SDLBackend.Rendering;
 using Forge.SDLBackend.Rendering.Components;
+using Forge.SDLBackend.Rendering.Text;
 using Forge.SDLBackend.Util;
 using Forge.UX.Rendering;
 using Forge.UX.UI;
@@ -79,6 +82,10 @@ namespace Forge.SDLBackend.Rendering {
 
             ActiveRenderer.AttachToWindow();
             ActiveRenderer.CreateRenderer();
+
+            TextRenderer textRenderer = new TextRenderer(this);
+            textRenderer.Initialize();
+            DI.Dependencies.RegisterInstance<TextRenderer>(textRenderer);
 
             callbacks.OnFrame += OnFrame;
         }
