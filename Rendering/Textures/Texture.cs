@@ -1,8 +1,6 @@
 ﻿using Forge.Logging;
 using Forge.UX.Rendering.Texture;
 
-using S4_GFXBridge.Rendering;
-
 using SDL;
 
 using System;

@@ -2,8 +2,6 @@
 using Forge.S4;
 using Forge.UX.Rendering;
 
-using S4_GFXBridge.Rendering;
-
 using SDL;
 
 using System;

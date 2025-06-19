@@ -1,12 +1,12 @@
 ﻿using DryIoc;
 
+using Forge.Config;
 using Forge.Engine;
 using Forge.Logging;
 using Forge.S4;
+using Forge.SDLBackend.Rendering;
 using Forge.SDLBackend.Rendering.Textures;
 using Forge.UX;
-
-using S4_GFXBridge.Rendering;
 
 using SDL;
 

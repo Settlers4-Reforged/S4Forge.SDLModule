@@ -18,7 +18,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Reflection;
 
-namespace S4_GFXBridge.Rendering {
+namespace Forge.SDLBackend.Rendering {
     public unsafe class SDLRenderer : IRenderer {
         public string Name => "SDLRenderer";
 

@@ -6,8 +6,6 @@ using Forge.UX.UI.Elements.Grouping;
 using Forge.UX.UI.Elements.Grouping.Display;
 using Forge.UX.UI.Elements.Grouping.Interaction;
 
-using S4_GFXBridge.Rendering;
-
 using SDL;
 
 using System;

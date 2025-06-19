@@ -3,6 +3,7 @@
 using Forge.Config;
 using Forge.Engine;
 using Forge.Logging;
+using Forge.SDLBackend.Rendering.Text;
 using Forge.SDLBackend.Util;
 using Forge.UX.Rendering;
 using Forge.UX.Rendering.Text;
@@ -17,7 +18,6 @@ using System.IO;
 using System.Numerics;
 using System.Text;
 
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Forge.SDLBackend.Rendering.Components;
 

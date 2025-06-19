@@ -3,8 +3,6 @@ using Forge.Engine;
 using Forge.Logging;
 using Forge.UX.Rendering.Texture;
 
-using S4_GFXBridge.Rendering;
-
 using System;
 using System.Collections.Generic;
 using System.IO;
