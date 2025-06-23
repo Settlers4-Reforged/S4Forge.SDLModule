@@ -29,12 +29,16 @@ namespace Forge.SDLBackend.Rendering.Components {
             Group = group;
 
             UpdateResources();
-            Renderer.OnUpdateRenderer += UpdateResources;
+            Renderer.OnUpdateRenderer += () => {
+                Target = null; // Recreating the renderer destroys the texture already
+                UpdateResources();
+            };
         }
 
         private void UpdateResources() {
             if (Target != null) {
                 SDL3.SDL_DestroyTexture(Target);
+                SDLUtil.LogSDLError("Failed to destroy group texture");
             }
 
             Vector2 screenSize = Renderer.GetScreenSize();

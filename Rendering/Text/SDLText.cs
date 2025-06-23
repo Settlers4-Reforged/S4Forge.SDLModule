@@ -7,7 +7,7 @@ using System;
 using System.Numerics;
 
 namespace Forge.SDLBackend.Rendering.Text {
-    internal unsafe struct SDLText {
+    internal unsafe class SDLText {
         // Font is stable across engine recreations
         private TTF_Font* assignedFont;
         private TTF_Text* text;
@@ -25,12 +25,22 @@ namespace Forge.SDLBackend.Rendering.Text {
             assignedFont = renderer.GetFont(style);
             text = null;
 
+            CreateText();
+        }
+
+        internal void CreateText() {
+            if (text != null)
+                DestroyText();
 
             text = SDL3_ttf.TTF_CreateText(renderer.engine, assignedFont, stringText, 0);
         }
 
-        internal void UpdateEngine() {
-            SDL3_ttf.TTF_SetTextEngine(text, renderer.engine);
+        internal void DestroyText() {
+            if (text == null)
+                return;
+
+            SDL3_ttf.TTF_DestroyText(text);
+            text = null;
         }
 
         public void SetText(string text) {
@@ -77,7 +87,7 @@ namespace Forge.SDLBackend.Rendering.Text {
             SDLUtil.HandleSDLError(SDL3_ttf.TTF_DrawRendererText(text, elementPosX, elementPosY));
         }
 
-        private readonly void ApplyStyle() {
+        private void ApplyStyle() {
             // Text style:
             SDL3_ttf.TTF_SetTextWrapWidth(text, style.Wrapped ? (int)textBoxSize.X : 0);
         }

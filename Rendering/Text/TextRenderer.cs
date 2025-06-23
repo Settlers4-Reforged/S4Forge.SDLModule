@@ -24,6 +24,7 @@ namespace Forge.SDLBackend.Rendering.Text {
 
         public TextRenderer(SDLRenderer renderer) {
             this.renderer = renderer;
+            this.renderer.OnUpdateRenderer += RecreateRenderer;
         }
 
         internal void Initialize() {
@@ -82,6 +83,10 @@ namespace Forge.SDLBackend.Rendering.Text {
         private void RecreateRenderer() {
             Logger.LogDebug("TextRenderer: Recreating TTF text engine");
 
+            foreach (var text in texts) {
+                text.DestroyText();
+            }
+
             if (engine != null)
                 SDL3_ttf.TTF_DestroyRendererTextEngine(engine);
 
@@ -92,7 +97,7 @@ namespace Forge.SDLBackend.Rendering.Text {
             }
 
             foreach (var text in texts) {
-                text.UpdateEngine();
+                text.CreateText();
             }
         }
 
