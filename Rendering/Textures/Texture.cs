@@ -1,4 +1,5 @@
 ﻿using Forge.Logging;
+using Forge.SDLBackend.Util;
 using Forge.UX.Rendering.Texture;
 
 using SDL;
@@ -49,18 +50,17 @@ namespace Forge.SDLBackend.Rendering.Textures {
         }
 
         private SDL_Texture* Load() {
+            Logger.LogDebug($"Loading texture from file: {File}");
             SDL_Texture* texture = SDL3_image.IMG_LoadTexture(Renderer.Renderer, File);
-            if (texture == null) {
-                string error = SDL3.SDL_GetError() ?? "Unknown SDL error";
-                throw new Exception($"Failed to load texture from {File} - {error}");
-            }
+            SDLUtil.HandleSDLError(texture != null, $"Failed to load texture from file: {File}");
 
             return texture;
         }
 
-        public void RefreshTexture() {
-            if (SDLTexture != null) {
+        public void RefreshTexture(bool destroy = true) {
+            if (destroy && SDLTexture != null) {
                 SDL3.SDL_DestroyTexture(SDLTexture);
+                SDLUtil.LogSDLError($"Failed to destroy texture: {Name}");
                 SDLTexture = null;
             }
 
@@ -68,6 +68,10 @@ namespace Forge.SDLBackend.Rendering.Textures {
             SDLTexture = texture;
         }
 
+        private void RefreshTexture() {
+            // Renderer updates will recreate the renderer
+            RefreshTexture(false);
+        }
 
         public void Dispose() {
             Renderer.OnUpdateRenderer -= RefreshTexture;
