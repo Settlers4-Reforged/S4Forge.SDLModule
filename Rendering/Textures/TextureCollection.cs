@@ -49,5 +49,9 @@ namespace Forge.SDLBackend.Rendering.Textures {
 
             return texture;
         }
+
+        public ITexture[] GetTextures() {
+            return textures.Values.ToArray();
+        }
     }
 }
