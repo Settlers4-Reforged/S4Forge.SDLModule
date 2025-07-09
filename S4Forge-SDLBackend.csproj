@@ -24,20 +24,15 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Reference Include="$(ProjectDir)Lib/SDL3-CS.dll">
-            <PrivateAssets>all</PrivateAssets>
-        </Reference>
-        <Reference Include="$(ProjectDir)Lib/SDL3_image-CS.dll">
-            <PrivateAssets>all</PrivateAssets>
-        </Reference>
-        <Reference Include="$(ProjectDir)Lib/SDL3_ttf-CS.dll">
-            <PrivateAssets>all</PrivateAssets>
-        </Reference>
+        <PackageReference Include="ppy.SDL3-CS" GeneratePathProperty="true" Version="2025.703.0" PrivateAssets="all" />
+        <PackageReference Include="ppy.SDL3_image-CS" GeneratePathProperty="true" Version="2025.703.0" PrivateAssets="all" />
+        <PackageReference Include="ppy.SDL3_ttf-CS" GeneratePathProperty="true" Version="2025.703.0" PrivateAssets="all" />
 
-        <EmbeddedResource Include="$(ProjectDir)Lib/SDL3-CS.dll" LogicalName="SDL3-CS.dll" />
-        <EmbeddedResource Include="$(ProjectDir)Lib/SDL3_image-CS.dll" LogicalName="SDL3_image-CS.dll" />
-        <EmbeddedResource Include="$(ProjectDir)Lib/SDL3_ttf-CS.dll" LogicalName="SDL3_ttf-CS.dll" />
-
+        <EmbeddedResource Include="$(Pkgppy_SDL3-CS)/lib/net8.0/SDL3-CS.dll" LogicalName="SDL3-CS.dll" />
+        <EmbeddedResource Include="$(Pkgppy_SDL3_image-CS)/lib/net8.0/SDL3_image-CS.dll" LogicalName="SDL3_image-CS.dll" />
+        <EmbeddedResource Include="$(Pkgppy_SDL3_ttf-CS)/lib/net8.0/SDL3_ttf-CS.dll" LogicalName="SDL3_ttf-CS.dll" />
+        
+        
         <ExportFile Include="$(ProjectDir)Lib\SDL3.dll;$(ProjectDir)Lib\SDL3_ttf.dll;$(ProjectDir)Lib\SDL3_image.dll">
             <ExportFileDir>\Lib\</ExportFileDir>
         </ExportFile>

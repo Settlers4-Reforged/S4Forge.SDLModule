@@ -59,7 +59,7 @@ namespace Forge.SDLBackend.Rendering.Text {
                 return null;
             }
 
-            SDL3_ttf.TTF_SetFontStyle(font, (int)style.Type);
+            SDL3_ttf.TTF_SetFontStyle(font, (TTF_FontStyleFlags)style.Type);
             SDL3_ttf.TTF_SetFontSize(font, TextFontSizeToDIP(style.Size));
             SDL3_ttf.TTF_SetFontWrapAlignment(font, (TTF_HorizontalAlignment)style.HorizontalAlignment);
             // Vertical alignment is not supported by SDL_ttf, so we ignore it here and handle it in the text rendering logic

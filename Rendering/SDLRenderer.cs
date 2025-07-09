@@ -62,12 +62,7 @@ namespace Forge.SDLBackend.Rendering {
             }
             Logger.LogInfo("SDL Version: {0}", SDL3.SDL_GetVersion());
 
-            Logger.LogInfo("Initializing SDL Image and TTF...");
-            IMG_InitFlags loadedLibs = SDL3_image.IMG_Init(IMG_InitFlags.IMG_INIT_PNG);
-            if (!loadedLibs.HasFlag(IMG_InitFlags.IMG_INIT_PNG)) {
-                Logger.LogError(null, "Failed to initialize SDL Image: {0}", SDL3.SDL_GetError() ?? "Unknown error");
-                return;
-            }
+            Logger.LogInfo("Initializing SDL TTF...");
             success = SDL3_ttf.TTF_Init();
             if (!success) {
                 Logger.LogError(null, "Failed to initialize SDL TTF: {0}", SDL3.SDL_GetError() ?? "Unknown error");
@@ -193,6 +188,7 @@ namespace Forge.SDLBackend.Rendering {
             UpdateRenderer(surface);
 
             ActiveRenderer.PrepareRender();
+
             DXDebugHelper.BeginEvent(0x00ff00, "Scene Frame Render");
             sceneManager.DoFrame();
             DXDebugHelper.EndEvent();
