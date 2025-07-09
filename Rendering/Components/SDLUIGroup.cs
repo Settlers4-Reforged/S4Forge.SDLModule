@@ -42,7 +42,7 @@ namespace Forge.SDLBackend.Rendering.Components {
             }
 
             Vector2 screenSize = Renderer.GetScreenSize();
-            Target = SDL3.SDL_CreateTexture(Renderer.Renderer, SDL_PixelFormat.SDL_PIXELFORMAT_RGBA8888, SDL_TextureAccess.SDL_TEXTUREACCESS_TARGET, (int)screenSize.X, (int)screenSize.Y);
+            Target = SDL3.SDL_CreateTexture(Renderer.Renderer, SDL_PixelFormat.SDL_PIXELFORMAT_ARGB8888, SDL_TextureAccess.SDL_TEXTUREACCESS_TARGET, (int)screenSize.X, (int)screenSize.Y);
             SDLUtil.LogSDLError("Updating group resources");
         }
 
