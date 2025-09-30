@@ -1,9 +1,9 @@
-﻿using Forge.Logging;
-using Forge.S4;
+﻿using Forge.Config;
+using Forge.Logging;
+using Forge.Native;
+using Forge.Native.DirectX;
 using Forge.SDLBackend.Rendering.Textures;
 using Forge.UX.Rendering;
-
-using Microsoft.DirectX.DirectDraw;
 
 using SDL;
 
@@ -15,21 +15,26 @@ using System.Threading.Tasks;
 
 namespace Forge.SDLBackend.Rendering {
     internal unsafe class D3D9Renderer : ISDLRenderer {
+        private static readonly CLogger Logger = DI.Resolve<CLogger>().WithCurrentContext().WithEnumCategory(ForgeLogCategory.Graphics);
+
         public SDL_Renderer* Renderer { get; private set; }
         public SDL_Window* Window { get; private set; }
 
         private IntPtr D3D9Device => config.GetConfig<IntPtr>("forge.d3d9.device");
         private IntPtr D3D9Direct3D => config.GetConfig<IntPtr>("forge.d3d9.direct3d");
-        private Surface D3D9MainSurface => config.GetConfig<Surface>("forge.d3d9.surface")!;
+        private IDirectDrawSurface7* D3D9MainSurface => (IDirectDrawSurface7*)config.GetConfig<IntPtr>("forge.d3d9.surface")!;
 
         private readonly IRendererConfig config;
-        public D3D9Renderer(IRendererConfig config) {
+        private readonly IGameValues gameValues;
+
+        public D3D9Renderer(IRendererConfig config, IGameValues gameValues) {
             this.config = config;
+            this.gameValues = gameValues;
         }
 
         public void AttachToWindow() {
             SDL_PropertiesID windowProps = SDL3.SDL_CreateProperties();
-            SDL3.SDL_SetPointerProperty(windowProps, SDL3.SDL_PROP_WINDOW_CREATE_WIN32_HWND_POINTER, GameValues.Hwnd);
+            SDL3.SDL_SetPointerProperty(windowProps, SDL3.SDL_PROP_WINDOW_CREATE_WIN32_HWND_POINTER, gameValues.Hwnd);
             Window = SDL3.SDL_CreateWindowWithProperties(windowProps);
         }
 
@@ -59,7 +64,7 @@ namespace Forge.SDLBackend.Rendering {
             Renderer = SDL3.SDL_CreateRendererWithProperties(rendererProps);
             string? sdlGetError = SDL3.SDL_GetError();
             if (!string.IsNullOrEmpty(sdlGetError)) {
-                Logger.LogError(null, sdlGetError ?? "SDL Error detected");
+                Logger.Log(LogLevel.Error, sdlGetError ?? "SDL Error detected");
                 SDL3.SDL_ClearError();
             }
 
@@ -69,7 +74,7 @@ namespace Forge.SDLBackend.Rendering {
         }
 
         public void PrepareRender() {
-            D3D9MainSurface.PrepareD3D();
+            D3D9MainSurface->PrepareD3D();
         }
 
         public void BeginPresent() {
@@ -77,12 +82,12 @@ namespace Forge.SDLBackend.Rendering {
 
             // The game uses multiple render targets when rendering the in game screen
             // This uses the "cached" main render target for the final render, acquired by the PrepareD3D call of the class
-            D3D9MainSurface.RestoreMainRenderTarget();
+            D3D9MainSurface->RestoreMainRenderTarget();
             SDL3.SDL_SetRenderViewport(Renderer, null);
         }
 
         public void EndPresent() {
-            D3D9MainSurface.ResetD3D();
+            D3D9MainSurface->ResetD3D();
         }
     }
 }

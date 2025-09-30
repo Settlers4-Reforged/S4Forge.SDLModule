@@ -1,8 +1,10 @@
 ﻿using DryIoc;
 
 using Forge.Config;
+using Forge.Game.Core;
 using Forge.Logging;
-using Forge.S4.Callbacks;
+using Forge.Native;
+using Forge.Native.DirectX;
 using Forge.SDLBackend.Rendering.Components;
 using Forge.SDLBackend.Rendering.Text;
 using Forge.SDLBackend.Util;
@@ -12,17 +14,18 @@ using Forge.UX.UI.Components;
 using Forge.UX.UI.Elements;
 using Forge.UX.UI.Elements.Grouping;
 
-using Microsoft.DirectX.DirectDraw;
-
 using SDL;
 
 using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace Forge.SDLBackend.Rendering {
     public unsafe class SDLRenderer : IRenderer {
+        private static readonly CLogger Logger = DI.Resolve<CLogger>().WithCurrentContext().WithEnumCategory(ForgeLogCategory.Graphics);
         public string Name => "SDLRenderer";
 
         private readonly IRendererConfig config;
@@ -46,34 +49,34 @@ namespace Forge.SDLBackend.Rendering {
         private Stack<Vector4> debugChanges = new Stack<Vector4>();
         private Stack<Vector4> debugHover = new Stack<Vector4>();
 
-        public SDLRenderer(ICallbacks callbacks, IRendererConfig config, SceneManager sceneManager) {
+        public SDLRenderer(ICallbacks callbacks, IGameValues gameValues, IRendererConfig config, SceneManager sceneManager) {
             this.config = config;
             this.sceneManager = sceneManager;
 
-            Logger.LogInfo("Initializing SDL...");
+            Logger.Log(LogLevel.Info, "Initializing SDL...");
 
             Assembly assembly = Assembly.GetExecutingAssembly();
             SDL3.SDL_SetAppMetadata("S4 Forge", assembly?.GetName()?.Version?.ToString() ?? "-", "com.s4-forge");
 
             var success = SDL3.SDL_Init(SDL_InitFlags.SDL_INIT_AUDIO | SDL_InitFlags.SDL_INIT_VIDEO);
             if (!success) {
-                Logger.LogError(null, "Failed to initialize SDL: {0}", SDL3.SDL_GetError() ?? "Unknown error");
+                Logger.TraceF(LogLevel.Error, "Failed to initialize SDL: {0}", SDL3.SDL_GetError() ?? "Unknown error");
                 return;
             }
-            Logger.LogInfo("SDL Version: {0}", SDL3.SDL_GetVersion());
+            Logger.LogF(LogLevel.Info, "SDL Version: {0}", SDL3.SDL_GetVersion());
 
-            Logger.LogInfo("Initializing SDL TTF...");
+            Logger.Log(LogLevel.Info, "Initializing SDL TTF...");
             success = SDL3_ttf.TTF_Init();
             if (!success) {
-                Logger.LogError(null, "Failed to initialize SDL TTF: {0}", SDL3.SDL_GetError() ?? "Unknown error");
+                Logger.TraceF(LogLevel.Error, "Failed to initialize SDL TTF: {0}", SDL3.SDL_GetError() ?? "Unknown error");
                 return;
             }
-            Logger.LogInfo("Finished SDL Initialization");
+            Logger.Log(LogLevel.Info, "Finished SDL Initialization");
 
-            Logger.LogInfo("Creating D3D Renderer...");
-            d3d11Renderer = new D3D11Renderer(config, this);
-            d3d9Renderer = new D3D9Renderer(config);
-            Logger.LogInfo("Finished D3D Renderer Creation");
+            Logger.Log(LogLevel.Info, "Creating D3D Renderer...");
+            d3d11Renderer = new D3D11Renderer(config, gameValues, this);
+            d3d9Renderer = new D3D9Renderer(config, gameValues);
+            Logger.Log(LogLevel.Info, "Finished D3D Renderer Creation");
 
             ActiveRenderer.AttachToWindow();
             ActiveRenderer.CreateRenderer();
@@ -85,10 +88,11 @@ namespace Forge.SDLBackend.Rendering {
             callbacks.OnFrame += OnFrame;
         }
 
-        private void UpdateRenderer(Surface d3dMainSurface) {
-            config.SetConfig("forge.d3d9.direct3d", (IntPtr)d3dMainSurface.Direct3D);
-            config.SetConfig("forge.d3d9.device", (IntPtr)d3dMainSurface.Device);
-            config.SetConfig("forge.d3d9.surface", d3dMainSurface);
+        private void UpdateRenderer(IDirectDrawSurface7* d3dMainSurface) {
+
+            config.SetConfig("forge.d3d9.direct3d", (IntPtr)d3dMainSurface->GetNativeDirect3D9());
+            config.SetConfig("forge.d3d9.device", (IntPtr)d3dMainSurface->GetNativeDevice9());
+            config.SetConfig<IntPtr>("forge.d3d9.surface", (IntPtr)d3dMainSurface);
 
             if (!ActiveRenderer.CreateRenderer()) return;
 
@@ -96,7 +100,7 @@ namespace Forge.SDLBackend.Rendering {
             //TODO: Add force redraw for every ui element
 
             string? name = SDL3.SDL_GetRendererName(Renderer);
-            Logger.LogDebug("Created SDL Renderer: {0}", name ?? string.Empty);
+            Logger.LogF(LogLevel.Debug, "Created SDL Renderer: {0}", name ?? string.Empty);
         }
 
         /// <summary>
@@ -135,7 +139,7 @@ namespace Forge.SDLBackend.Rendering {
                         component.Data = new TextureComponentRenderer(tc, parent);
                         break;
                     default:
-                        Logger.LogError(null, "Tried to render unknown UI component");
+                        Logger.TraceF(LogLevel.Error, "Tried to render unknown UI component");
                         component.Data = new NullComponentRenderer();
                         break;
                 }
@@ -159,7 +163,7 @@ namespace Forge.SDLBackend.Rendering {
             var renderGroup = GroupFromState(group, sceneGraphState);
 
             if (!group.IsDirty && renderGroup.QueueSize != 0)
-                Logger.LogWarn("Group {0} was not marked dirty, but commands were queued for it!", group.Id);
+                Logger.LogF(LogLevel.Warning, "Group {0} was not marked dirty, but commands were queued for it!", group.Id);
 
             if (group.IsDirty || renderGroup.QueueSize != 0) // refresh group when dirty, otherwise use cached version
                 renderGroup.FlushCommands(sceneGraphState);
@@ -168,20 +172,12 @@ namespace Forge.SDLBackend.Rendering {
         }
 
         private ulong prevTime = 0;
-        public void TransferToMainWindow(Surface surface) {
-            if (!SDL3.SDL_FlushRenderer(Renderer)) {
-                Logger.LogError(null, SDL3.SDL_GetError() ?? "SDL Error detected");
-                SDL3.SDL_ClearError();
-            }
-
-            string? sdlGetError = SDL3.SDL_GetError();
-            if (!string.IsNullOrEmpty(sdlGetError)) {
-                Logger.LogError(null, sdlGetError ?? "SDL Error detected");
-                SDL3.SDL_ClearError();
-            }
+        public void TransferToMainWindow(IDirectDrawSurface7* surface) {
+            SDLUtil.HandleSDLError(SDL3.SDL_FlushRenderer(Renderer), "Failed to flush renderer to main window");
+            SDLUtil.LogSDLError("After Transfer error boundary caught an error! Check previous SDL function calls for left over errors");
         }
 
-        public void OnFrame(Surface? surface, int pillarBoxWidth) {
+        public void OnFrame(IDirectDrawSurface7* surface, int pillarBoxWidth) {
             if (surface == null)
                 return;
 
@@ -189,11 +185,11 @@ namespace Forge.SDLBackend.Rendering {
 
             ActiveRenderer.PrepareRender();
 
-            DXDebugHelper.BeginEvent(0x00ff00, "Scene Frame Render");
+            //DXDebugHelper.BeginEvent(0x00ff00, "Scene Frame Render");
             sceneManager.DoFrame();
-            DXDebugHelper.EndEvent();
+            //DXDebugHelper.EndEvent();
 
-            DXDebugHelper.BeginEvent(0x00ff00, "Present Groups");
+            //DXDebugHelper.BeginEvent(0x00ff00, "Present Groups");
             ActiveRenderer.BeginPresent();
             SDL3.SDL_SetRenderClipRect(Renderer, null);
 
@@ -239,11 +235,11 @@ namespace Forge.SDLBackend.Rendering {
             SDL3.SDL_SetRenderDrawColor(Renderer, 255, 0, 255, 255);
             SDL3.SDL_RenderDebugText(Renderer, 0, 0, $"FPS: {fps}");
 
-            DXDebugHelper.EndEvent();
+            //DXDebugHelper.EndEvent();
 
-            DXDebugHelper.BeginEvent(0x00ff00, "Transfer to Main Window");
+            //DXDebugHelper.BeginEvent(0x00ff00, "Transfer to Main Window");
             TransferToMainWindow(surface);
-            DXDebugHelper.EndEvent();
+            //DXDebugHelper.EndEvent();
 
             ActiveRenderer.EndPresent();
         }

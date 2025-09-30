@@ -22,6 +22,6 @@ internal class UXEngineSDLRenderer : IModule {
     public string Name => "UX-Engine SDL Renderer";
 
     public void Initialize(Container injector) {
-        UXEngine.Implement<SDLRenderer, TextureCollectionManager>(0);
+        injector.Resolve<UXEngine>().Implement<SDLRenderer, TextureCollectionManager>(0);
     }
 }

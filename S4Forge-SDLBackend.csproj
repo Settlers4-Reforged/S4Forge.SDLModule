@@ -61,7 +61,6 @@
         <Otherwise>
             <ItemGroup>
                 <PackageReference Include="S4Forge" Version="*" />
-                <PackageReference Include="S4Forge.Bootstrapper" Version="*" PrivateAssets="all" />
                 <PackageReference Include="S4Forge.UX-Engine" Version="*" />
             </ItemGroup>
         </Otherwise>

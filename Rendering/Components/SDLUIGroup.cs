@@ -1,4 +1,5 @@
-﻿using Forge.Logging;
+﻿using Forge.Config;
+using Forge.Logging;
 using Forge.SDLBackend.Util;
 using Forge.UX.Rendering;
 using Forge.UX.UI;
@@ -17,6 +18,8 @@ using System.Threading.Tasks;
 
 namespace Forge.SDLBackend.Rendering.Components {
     internal unsafe class SDLUIGroup : IElementData, IDisposable {
+        private readonly CLogger Logger = DI.Resolve<CLogger>().WithCurrentContext().WithEnumCategory(ForgeLogCategory.UI);
+
         private Queue<(IUXComponent, SceneGraphState)> RenderQueue = new Queue<(IUXComponent, SceneGraphState)>();
         private SDLRenderer Renderer;
 
@@ -54,7 +57,7 @@ namespace Forge.SDLBackend.Rendering.Components {
 
         public void FlushCommands(SceneGraphState sceneGraphState) {
             if (Target == null) {
-                Logger.LogError(null, "Tried to flush to empty target");
+                Logger.Log(LogLevel.Error, "Tried to flush to empty target");
                 return;
             }
             SDLUtil.HandleSDLError(SDL3.SDL_SetRenderTarget(Renderer.Renderer, Target));

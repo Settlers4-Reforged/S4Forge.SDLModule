@@ -13,6 +13,7 @@ using System.Numerics;
 
 namespace Forge.SDLBackend.Rendering.Text {
     internal unsafe class TextRenderer {
+        private static readonly CLogger Logger = DI.Resolve<CLogger>().WithCurrentContext().WithEnumCategory(ForgeLogCategory.Graphics);
         SDLRenderer renderer;
 
         public TTF_TextEngine* engine;
@@ -44,12 +45,12 @@ namespace Forge.SDLBackend.Rendering.Text {
         }
 
         private TTF_Font* CreateFont(TextStyle style) {
-            Logger.LogDebug("TextRenderer: Creating font with size {0}", style.Size);
+            Logger.LogF(LogLevel.Debug, "TextRenderer: Creating font with size {0}", style.Size);
 
             ModuleEnvironment<UXEngineSDLRenderer> env = DI.Resolve<ModuleEnvironment<UXEngineSDLRenderer>>();
             string fontPath = Path.Join(env.Path, "Fonts", "arial.ttf");
             if (!File.Exists(fontPath)) {
-                Logger.LogError(null, "TextRenderer: Font file '{0}' does not exist", fontPath);
+                Logger.TraceF(LogLevel.Error, "TextRenderer: Font file '{0}' does not exist", fontPath);
                 return null;
             }
 
@@ -81,7 +82,7 @@ namespace Forge.SDLBackend.Rendering.Text {
         }
 
         private void RecreateRenderer() {
-            Logger.LogDebug("TextRenderer: Recreating TTF text engine");
+            Logger.Log(LogLevel.Debug, "TextRenderer: Recreating TTF text engine");
 
             foreach (var text in texts) {
                 text.DestroyText();

@@ -12,6 +12,8 @@ using System.Threading.Tasks;
 
 namespace Forge.SDLBackend.Rendering.Textures {
     internal class TextureCollection<TMap> : ITextureCollection<TMap> where TMap : Enum {
+        private static readonly CLogger Logger = DI.Resolve<CLogger>().WithCurrentContext().WithEnumCategory(ForgeLogCategory.Setup);
+
         private Dictionary<string, Texture> textures = new Dictionary<string, Texture>();
 
         public string Path { get; private set; }
@@ -30,10 +32,10 @@ namespace Forge.SDLBackend.Rendering.Textures {
             // Load textures from disk
             textures.Clear();
 
-            Logger.LogDebug("UX Engine requested loading of {0}", Path);
+            Logger.LogF(LogLevel.Debug, "UX Engine requested loading of {0}", Path);
 
             if (!Directory.Exists(Path)) {
-                Logger.LogError(null, "Texture collection {0} not found", Path);
+                Logger.TraceF(LogLevel.Error, "Texture collection {0} not found", Path);
                 return;
             }
 

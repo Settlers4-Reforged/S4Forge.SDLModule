@@ -1,4 +1,5 @@
-﻿using Forge.Logging;
+﻿using Forge.Config;
+using Forge.Logging;
 using Forge.SDLBackend.Util;
 using Forge.UX.Rendering.Texture;
 
@@ -10,6 +11,8 @@ using System.IO;
 
 namespace Forge.SDLBackend.Rendering.Textures {
     internal unsafe class Texture : ITexture, IDisposable {
+        static readonly CLogger Logger = DI.Resolve<CLogger>().WithCurrentContext().WithEnumCategory(ForgeLogCategory.Graphics);
+
         public int Width { get; }
         public int Height { get; }
 
@@ -28,7 +31,7 @@ namespace Forge.SDLBackend.Rendering.Textures {
                     Texture texture = new Texture(file, renderer);
                     textures.Add(texture);
                 } catch (Exception e) {
-                    Logger.LogError(e, "Failed loading texture from folder, skipping texture...");
+                    Logger.TraceExceptionF(LogLevel.Error, e, "Failed loading texture from folder, skipping texture...");
                 }
             }
 
@@ -50,7 +53,7 @@ namespace Forge.SDLBackend.Rendering.Textures {
         }
 
         private SDL_Texture* Load() {
-            Logger.LogDebug($"Loading texture from file: {File}");
+            Logger.LogF(LogLevel.Debug, "Loading texture from file: {0}", File);
             SDL_Texture* texture = SDL3_image.IMG_LoadTexture(Renderer.Renderer, File);
             SDLUtil.HandleSDLError(texture != null, $"Failed to load texture from file: {File}");
 
@@ -78,6 +81,7 @@ namespace Forge.SDLBackend.Rendering.Textures {
 
             if (SDLTexture != null) {
                 SDL3.SDL_DestroyTexture(SDLTexture);
+                SDLUtil.LogSDLError($"Failed to dispose of texture: {Name}");
                 SDLTexture = null;
             }
         }
